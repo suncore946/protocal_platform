@@ -4,4 +4,5 @@ app:
   secret_key: "dev-secret-key"
   db_path: "app.db"
   log_file: "logs/app.log"
+  test_cases_path: "test_cases"
   game_server: "http://game_backend.com"

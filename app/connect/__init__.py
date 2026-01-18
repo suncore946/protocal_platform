@@ -28,14 +28,21 @@ def execute_protocol(protocol_row: Dict[str, Any], params: Dict[str, Any]) -> Di
     """
     统一入口函数，用于向下兼容旧的调用方式
     """
-    raw_call_type = (protocol_row["call_type"] or "socket").lower()
+    raw_call_type = (protocol_row.get("call_type") or "socket").lower()
     try:
         call_type = CallType(raw_call_type)
     except ValueError:
         return {"error": f"Unknown or unsupported call_type: {raw_call_type}"}
     
     # 解析目标配置
-    target_config = json.loads(protocol_row["target_config_json"] or "{}")
+    # 兼容处理：如果已经是 dict 则直接使用，如果是 json 字符串则解析
+    t_config = protocol_row.get("target_config")
+    t_config_json = protocol_row.get("target_config_json")
+    
+    if isinstance(t_config, dict):
+        target_config = t_config
+    else:
+        target_config = json.loads(t_config_json or "{}")
     
     config = target_config.copy()
 

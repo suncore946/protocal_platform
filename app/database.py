@@ -1,12 +1,7 @@
 import sqlite3
 import json
 from flask import g, current_app
-from app.config import DB_PATH, PROTOCOL_DEFAULTS, GAME_SERVER
-
-import sqlite3
-import json
-from flask import g, current_app
-from app.config import DB_PATH, PROTOCOL_DEFAULTS, GAME_SERVER
+from app.config import DB_PATH, GAME_SERVER
 
 class Database:
     def __init__(self, app=None):
@@ -54,35 +49,6 @@ class Database:
             conn = self.connection
             cur = conn.cursor()
             
-            # 创建协议表
-            cur.execute(
-                """
-                CREATE TABLE IF NOT EXISTS protocol (
-                    id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    name TEXT NOT NULL,
-                    description TEXT,
-                    params_json TEXT,
-                    sample_return_json TEXT,
-                    assertions_json TEXT DEFAULT '[]',
-                    call_type TEXT DEFAULT 'socket',
-                    target_config_json TEXT,
-                    test_cases_json TEXT DEFAULT '[]'
-                );
-                """
-            )
-
-            # 尝试为旧表添加字段 (如果字段不存在)
-            for col, type_info in [
-                ("assertions_json", "TEXT DEFAULT '[]'"),
-                ("call_type", "TEXT DEFAULT 'socket'"),
-                ("target_config_json", "TEXT"),
-                ("test_cases_json", "TEXT DEFAULT '[]'")
-            ]:
-                try:
-                    cur.execute(f"ALTER TABLE protocol ADD COLUMN {col} {type_info}")
-                except sqlite3.OperationalError:
-                    pass
-
             # 创建设置表
             cur.execute(
                 """
@@ -114,7 +80,7 @@ class Database:
             )
             conn.commit()
 
-            # 尝试为历史表添加新字段
+            # 尝试为历史表添加新字段 (兼容旧数据库文件)
             new_cols = [
                 ("protocol_name", "TEXT"),
                 ("target_url", "TEXT"),
@@ -127,30 +93,6 @@ class Database:
                     cur.execute(f"ALTER TABLE history ADD COLUMN {col_name} {col_type}")
                 except sqlite3.OperationalError:
                     pass
-
-            # 检查并更新默认协议数据
-            # 遍历 PROTOCOL_DEFAULTS，如果不存在则插入
-            for item in PROTOCOL_DEFAULTS:
-                name = item.get("name")
-                cur.execute("SELECT id FROM protocol WHERE name = ?", (name,))
-                if not cur.fetchone():
-                    cur.execute(
-                        """
-                        INSERT INTO protocol (name, description, params_json, sample_return_json, call_type, target_config_json, assertions_json, test_cases_json)
-                        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-                        """,
-                        (
-                            name,
-                            item.get("description", ""),
-                            json.dumps(item.get("params", {}), ensure_ascii=False),
-                            json.dumps(item.get("sample_return", {}), ensure_ascii=False),
-                            item.get("call_type", "socket"),
-                            json.dumps(item.get("target_config", {}), ensure_ascii=False),
-                            json.dumps(item.get("assertions", []), ensure_ascii=False),
-                            json.dumps(item.get("test_cases", []), ensure_ascii=False),
-                        ),
-                    )
-                    current_app.logger.info(f"Inserted new default protocol: {name}")
             
             conn.commit()
 

@@ -263,24 +263,9 @@ gunicorn -w 2 -b 0.0.0.0:5000 app:app
         order_id: "ORD-9999"
 ```
 
-#### 示例 2: 接入内部 Python 函数 (Local)
-
-适用于测试项目内部的业务逻辑函数。
-
-```yaml
-  - name: "GM指令-修改等级"
-    call_type: "local"
-    target_config:
-      # 对应 app/connect/local.py 中 LocalProtocolHandler 类的方法名
-      method: "modify_level"
-    params:
-      uid:
-        type: "string"
-        default: "u_001"
-      level:
-        type: "number"
-        default: 99
-```
+#### 实例2: 接入Protobuf协议
+需要编写少量 Python 代码定义协议结构。请见下说明。
+具体文档说明: [PROTO_GUIDE.md](./documents/PROTO_GUIDE.md)
 
 ---
 如需补充“抽卡/数值比拼”页面与接口细节，可继续说明需求。
