@@ -30,7 +30,7 @@
       </div>
     </nav>
     <div class="sidebar-footer">
-      Powered by Protocol Platform
+      Powered by SunCore.Y
     </div>
   </aside>
 
@@ -186,7 +186,7 @@
 
         // Update View
         els.views.forEach(v => v.classList.remove('active'));
-        document.getElementById(iew-).classList.add('active');
+        document.getElementById('view-' + tabName).classList.add('active');
 
         // Special actions
         if (tabName === 'doc') loadDocTable();
@@ -203,7 +203,7 @@
         data.forEach(p => {
           const opt = document.createElement('option');
           opt.value = p.id;
-          opt.textContent = [] ;
+          opt.textContent = '[' + p.id + '] ' + p.name;
           els.protocolSelect.appendChild(opt);
         });
       });
@@ -213,7 +213,7 @@
       const id = e.target.value;
       if(!id) return;
 
-      fetch(/api/protocol/)
+      fetch('/api/protocol/' + id)
         .then(res => res.json())
         .then(data => {
           currentProtocolData = data;
@@ -251,7 +251,7 @@
 
     function createPill(label, params, isActive) {
       const btn = document.createElement('div');
-      btn.className = pill ;
+      btn.className = 'pill' + (isActive ? ' active' : '');
       btn.textContent = label;
       btn.onclick = () => {
          // UI toggle
@@ -280,13 +280,27 @@
         
         const label = document.createElement('label');
         label.className = 'label';
-        label.textContent = key; // Simple label, could use conf.description
+        label.textContent = key;
         
         let input;
-        const val = (conf.default !== undefined) ? conf.default : '';
+        
+        // Determine if this is a schema object or a direct value
+        // Schema usually has 'type' or 'default'
+        const isSchema = (typeof conf === 'object' && conf !== null && (conf.type || conf.default !== undefined));
+        
+        let val = '';
+        let type = 'string';
 
-        // Basic Type Handling
-        if (typeof conf === 'object' && conf.type === 'boolean') {
+        if (isSchema) {
+            val = (conf.default !== undefined) ? conf.default : '';
+            type = conf.type || 'string';
+        } else {
+            val = conf;
+            if (typeof conf === 'number') type = 'integer';
+            else if (typeof conf === 'boolean') type = 'boolean';
+        }
+
+        if (type === 'boolean') {
            input = document.createElement('select');
            input.className = 'select';
            input.innerHTML = '<option value="true">True</option><option value="false">False</option>';
@@ -294,8 +308,9 @@
         } else {
            input = document.createElement('input');
            input.className = 'input';
-           input.value = val;
-           if (typeof conf === 'object' && conf.type === 'integer') {
+           input.value = (val !== undefined && val !== null) ? val : '';
+           
+           if (type === 'integer') {
              input.type = 'number';
            } else {
              input.type = 'text';
@@ -325,16 +340,16 @@
              let target = '-';
              if (item.target_config) {
                 if (item.target_config.url) target = item.target_config.url;
-                else if (item.target_config.host) target = ${item.target_config.host}:;
+                else if (item.target_config.host) target = item.target_config.host + ':' + (item.target_config.port || '');
              }
 
              tr.innerHTML = 
-               <td>#</td>
-               <td><span style="font-weight:600;"></span></td>
-               <td><span class="code-snippet"></span></td>
-               <td style="color:#6b7280; font-size:13px;"></td>
-               <td style="font-size:13px;"></td>
-             ;
+               '<td>' + item.id + '</td>' +
+               '<td><span style="font-weight:600;">' + (item.name || '') + '</span></td>' +
+               '<td><span class="code-snippet">' + (item.call_type || 'HTTP') + '</span></td>' +
+               '<td style="color:#6b7280; font-size:13px;">' + (item.description || '-') + '</td>' +
+               '<td style="font-size:13px;">' + target + '</td>';
+             
              els.docTableBody.appendChild(tr);
            });
            docLoaded = true;
@@ -377,7 +392,7 @@
        payload.concurrency = concurrency;
        payload.with_random = withRandom;
 
-       fetch(/api/protocol//call, {
+       fetch('/api/protocol/' + currentProtocolData.id + '/call', {
           method: 'POST',
           headers: {'Content-Type': 'application/json'},
           body: JSON.stringify(payload)
