@@ -196,4 +196,81 @@ gunicorn -w 2 -b 0.0.0.0:5000 app:app
 ```
 
 ---
+
+## 13. 快速接入新协议（项目配置）
+
+通过修改 `config.yaml` 可以在不写代码的情况下（针对 HTTP）或极少量代码的情况下（针对 Local/Socket）快速接入新协议。
+
+### 接入步骤
+
+1. **编辑配置**：打开项目根目录下的 `config.yaml`。
+2. **添加定义**：在 `protocol_defaults` 列表下追加新的协议配置块。
+3. **重启生效**：运行 `python run.py` 重启服务。系统启动时会将新协议自动写入数据库。
+
+> **注意**：系统通过 `name` 字段判断协议是否存在。如果数据库中已存在同名协议，修改配置文件**不会**覆盖原有数据。若需强制更新，请修改协议名称（如加上版本号）或删除 `app.db` 文件。
+
+### 配置字段详解
+
+| 字段 | 必填 | 说明 |
+| :--- | :--- | :--- |
+| `name` | 是 | 协议的唯一标识名称。 |
+| `description` | 否 | 协议描述，展示在前端界面。 |
+| `call_type` | 是 | 调用类型。支持 `http`, `local`, `socket`, `protobuf`。 |
+| `target_config` | 是 | 目标配置对象。`http` 需配置 `url`, `method`；`local` 需配置 `method`。 |
+| `params` | 否 | 参数定义字典。用于前端自动生成输入表单，支持设置 `default` 值。 |
+| `assertions` | 否 | **默认断言规则**。Python 表达式列表，用于验证响应是否符合预期。 |
+| `sample_return` | 否 | 示例返回值。用于前端展示结构，或在实际调用失败/Mock模式下作为兜底返回。 |
+
+### 典型配置示例
+
+#### 示例 1: 接入 HTTP 接口（带断言）
+
+无需编写 Python 代码，直接配置即可测试外部接口。
+
+```yaml
+  - name: "用户下单接口"
+    call_type: "http"
+    description: "测试商城下单逻辑，验证余额扣除"
+    target_config:
+      # 若 URL 不以 http 开头，将自动拼接前端设置的全局服务器地址
+      url: "/api/order/create"
+      method: "POST"
+    params:
+      goods_id:
+        type: "number"
+        default: 10086
+      count:
+        type: "number"
+        default: 1
+    # 配置默认断言，每次调用都会自动检查
+    assertions:
+      - "response['code'] == 0"
+      - "response['data']['order_status'] == 'pending'"
+    sample_return:
+      code: 0
+      message: "success"
+      data:
+        order_id: "ORD-9999"
+```
+
+#### 示例 2: 接入内部 Python 函数 (Local)
+
+适用于测试项目内部的业务逻辑函数。
+
+```yaml
+  - name: "GM指令-修改等级"
+    call_type: "local"
+    target_config:
+      # 对应 app/connect/local.py 中 LocalProtocolHandler 类的方法名
+      method: "modify_level"
+    params:
+      uid:
+        type: "string"
+        default: "u_001"
+      level:
+        type: "number"
+        default: 99
+```
+
+---
 如需补充“抽卡/数值比拼”页面与接口细节，可继续说明需求。

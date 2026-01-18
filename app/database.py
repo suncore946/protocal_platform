@@ -48,6 +48,7 @@ def init_db(app):
                 description TEXT,
                 params_json TEXT,
                 sample_return_json TEXT,
+                assertions_json TEXT DEFAULT '[]',
                 call_type TEXT DEFAULT 'socket',
                 target_config_json TEXT
             );
@@ -55,6 +56,11 @@ def init_db(app):
         )
 
         # 尝试为旧表添加字段 (如果字段不存在)
+        try:
+            cur.execute("ALTER TABLE protocol ADD COLUMN assertions_json TEXT DEFAULT '[]'")
+        except sqlite3.OperationalError:
+            pass
+
         try:
             cur.execute("ALTER TABLE protocol ADD COLUMN call_type TEXT DEFAULT 'socket'")
         except sqlite3.OperationalError:
@@ -99,8 +105,8 @@ def init_db(app):
             if not cur.fetchone():
                 cur.execute(
                     """
-                    INSERT INTO protocol (name, description, params_json, sample_return_json, call_type, target_config_json)
-                    VALUES (?, ?, ?, ?, ?, ?)
+                    INSERT INTO protocol (name, description, params_json, sample_return_json, call_type, target_config_json, assertions_json)
+                    VALUES (?, ?, ?, ?, ?, ?, ?)
                     """,
                     (
                         name,
@@ -109,6 +115,7 @@ def init_db(app):
                         json.dumps(item.get("sample_return", {}), ensure_ascii=False),
                         item.get("call_type", "socket"),
                         json.dumps(item.get("target_config", {}), ensure_ascii=False),
+                        json.dumps(item.get("assertions", []), ensure_ascii=False),
                     ),
                 )
                 current_app.logger.info(f"Inserted new default protocol: {name}")

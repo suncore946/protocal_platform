@@ -30,6 +30,7 @@ def get_doc():
             "description": row["description"],
             "params": json.loads(row["params_json"] or "{}"),
             "sample_return": json.loads(row["sample_return_json"] or "{}"),
+            "assertions": json.loads(row["assertions_json"] or "[]"),
             # 扩展配置信息回显
             "call_type": row["call_type"],
             "target_config": json.loads(row["target_config_json"] or "{}"),
@@ -67,6 +68,7 @@ def get_protocol_detail(protocol_id: int):
             "description": row["description"],
             "params": json.loads(row["params_json"] or "{}"),
             "sample_return": json.loads(row["sample_return_json"] or "{}"),
+            "assertions": json.loads(row["assertions_json"] or "[]"),
         }
     )
 
@@ -75,7 +77,8 @@ def call_protocol(protocol_id: int):
     """发起协议调用"""
     payload = request.get_json(silent=True) or {}
     params = payload.get("params", {})
-    assertions = payload.get("assertions", [])
+    # 优先使用 api 传入的断言，没传则使用 db 中默认的
+    assertions = payload.get("assertions")
     concurrency = int(payload.get("concurrency", 1))
     with_random = bool(payload.get("with_random", False))
 
@@ -84,6 +87,9 @@ def call_protocol(protocol_id: int):
     
     if not row:
         return jsonify({"error": "protocol not found"}), 404
+        
+    if assertions is None:
+        assertions = json.loads(row["assertions_json"] or "[]")
 
     base_return = json.loads(row["sample_return_json"] or "{}")
     protocol_name = row["name"]
