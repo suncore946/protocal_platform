@@ -3,7 +3,7 @@ import random
 from datetime import datetime
 from flask import Blueprint, jsonify, request, session
 from loguru import logger
-from app.database import get_db, get_setting, set_setting
+from app.database import db
 from app.connect import execute_protocol, log_protocol_test
 from app.config import GAME_SERVER
 
@@ -13,15 +13,15 @@ bp = Blueprint('api', __name__, url_prefix='/api')
 @bp.route("/protocols", methods=["GET"])
 def get_protocols():
     """获取所有协议列表"""
-    db = get_db()
-    rows = db.execute("SELECT id, name FROM protocol ORDER BY id ASC").fetchall()
+    conn = db.connection
+    rows = conn.execute("SELECT id, name FROM protocol ORDER BY id ASC").fetchall()
     return jsonify([{"id": r["id"], "name": r["name"]} for r in rows])
 
 @bp.route("/doc", methods=["GET"])
 def get_doc():
     """获取所有协议的清单列表"""
-    db = get_db()
-    rows = db.execute("SELECT * FROM protocol ORDER BY id ASC").fetchall()
+    conn = db.connection
+    rows = conn.execute("SELECT * FROM protocol ORDER BY id ASC").fetchall()
     
     results = []
     for row in rows:
@@ -41,8 +41,8 @@ def get_doc():
 @bp.route("/protocol/<int:protocol_id>", methods=["GET"])
 def get_protocol_detail(protocol_id: int):
     """获取单个协议详细信息"""
-    db = get_db()
-    row = db.execute("SELECT * FROM protocol WHERE id = ?", (protocol_id,)).fetchone()
+    conn = db.connection
+    row = conn.execute("SELECT * FROM protocol WHERE id = ?", (protocol_id,)).fetchone()
     
     if not row:
         return jsonify({"error": "protocol not found"}), 404
@@ -68,8 +68,8 @@ def call_protocol(protocol_id: int):
     concurrency = int(payload.get("concurrency", 1))
     with_random = bool(payload.get("with_random", False))
 
-    db = get_db()
-    row = db.execute("SELECT * FROM protocol WHERE id = ?", (protocol_id,)).fetchone()
+    conn = db.connection
+    row = conn.execute("SELECT * FROM protocol WHERE id = ?", (protocol_id,)).fetchone()
     
     if not row:
         return jsonify({"error": "protocol not found"}), 404
@@ -132,7 +132,7 @@ def call_protocol(protocol_id: int):
             call_type = (row["call_type"] or "socket").lower()
             if call_type == "http":
                 # 再次获取 global setting 以拼凑完整 URL (仅做展示用)
-                global_url = get_setting("global_target_url", GAME_SERVER)
+                global_url = db.get_setting("global_target_url", GAME_SERVER)
                 rel_url = target_config.get("url", "")
                 from urllib.parse import urljoin
                 target_info = urljoin(global_url, rel_url) if not rel_url.startswith("http") else rel_url

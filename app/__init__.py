@@ -1,7 +1,7 @@
 from flask import Flask
 from loguru import logger
 from app.config import LOG_PATH, SECRET_KEY, BASE_DIR
-from app.database import close_db, init_db
+from app.database import db
 from app.blueprints import main, api
 
 def configure_logging():
@@ -29,7 +29,7 @@ def create_app():
     app.secret_key = SECRET_KEY
 
     # 注册数据库关闭函数
-    app.teardown_appcontext(close_db)
+    db.init_app(app)
 
     # 注册蓝图
     app.register_blueprint(main.bp)
@@ -39,7 +39,7 @@ def create_app():
     # 注意：在生产环境中，这通常通过单独的迁移脚本或 CLI 命令完成
     # 这里为了保持原有的便捷性，保留在启动时检查
     try:
-        init_db(app)
+        db.init_db(app)
     except Exception as e:
         logger.error(f"Database initialization failed: {e}")
 

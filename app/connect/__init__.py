@@ -2,7 +2,7 @@ import json
 from datetime import datetime
 from urllib.parse import urljoin
 from typing import Dict, Any, Type, Optional
-from app.database import get_setting, get_db
+from app.database import db
 from app.config import GAME_SERVER
 from .base import BaseProtocolHandler
 from .http import HttpProtocolHandler
@@ -41,7 +41,7 @@ def execute_protocol(protocol_row: Dict[str, Any], params: Dict[str, Any]) -> Di
 
     # 处理全局 URL (仅针对 HTTP)
     if call_type == CallType.HTTP:
-        global_url = get_setting("global_target_url", GAME_SERVER)
+        global_url = db.get_setting("global_target_url", GAME_SERVER)
         relative_url = config.get("url", "")
         # 如果是相对路径或为空，则拼接全局 URL
         if not relative_url.lower().startswith(("http://", "https://")):
@@ -68,8 +68,8 @@ def log_protocol_test(
     记录协议测试历史到数据库。
     """
     try:
-        db = get_db()
-        db.execute(
+        conn = db.connection
+        conn.execute(
             """
             INSERT INTO history (
                 username, action, protocol_name, target_url, 
@@ -87,7 +87,7 @@ def log_protocol_test(
                 datetime.utcnow().isoformat() + "Z"
             ),
         )
-        db.commit()
+        conn.commit()
     except Exception as e:
         # 避免日志记录失败影响主流程，仅打印错误
         print(f"Failed to log history: {e}")
