@@ -4,50 +4,8 @@ app:
   secret_key: "dev-secret-key"
   db_path: "app.db"
   log_file: "logs/app.log"
+
 protocol_defaults:
-  - name: "用户查询"
-    call_type: "local"
-    target_config:
-      method: "user_query"
-    description: "根据用户ID查询用户基础信息。"
-    params:
-      user_id:
-        type: "string"
-        default: "10001"
-        required: true
-    assertions:
-      - "response['code'] == 0"
-      - "response['data']['user_id'] == params['user_id']"
-    sample_return:
-      code: 0
-      message: "ok"
-      data:
-        user_id: "10001"
-        name: "张三"
-        level: 12
-
-  - name: "订单创建"
-    call_type: "local"
-    target_config:
-      method: "order_create"
-    description: "创建订单并返回订单ID。"
-    params:
-      amount:
-        type: "number"
-        default: 99.5
-        required: true
-      currency:
-        type: "string"
-        default: "CNY"
-        required: true
-    sample_return:
-      code: 0
-      message: "ok"
-      data:
-        order_id: "ODR-20240101-0001"
-        amount: 99.5
-        currency: "CNY"
-
   - name: "HTTP测试"
     call_type: "http"
     target_config:
