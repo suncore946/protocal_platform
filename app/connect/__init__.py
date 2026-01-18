@@ -8,7 +8,13 @@ from .base import BaseProtocolHandler
 from .http import HttpProtocolHandler
 from .socket import SocketProtocolHandler
 from .protobuf import ProtobufProtocolHandler
-from .enums import CallType
+
+from enum import Enum
+
+class CallType(str, Enum):
+    HTTP = "http"
+    SOCKET = "socket"
+    PROTOBUF = "protobuf"
 
 # 协议处理器注册表
 HANDLER_REGISTRY: Dict[CallType, Type[BaseProtocolHandler]] = {
