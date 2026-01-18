@@ -3,232 +3,398 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <!-- 使用后端传递的 title 变量 -->
   <title>{{ title }}</title>
   <link rel="stylesheet" href="/static/style.css" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
 </head>
 <body>
-  <!-- 顶部导航栏 -->
-  <header class="navbar">
-    <div class="brand">{{ title }}</div>
-    <nav class="tabs">
-      <!-- data-tab 属性用于关联下方的内容区域 -->
-      <button class="tab active" data-tab="protocol">协议测试</button>
-      <button class="tab" data-tab="gacha">抽卡</button>
-      <button class="tab" data-tab="battle">数值比拼</button>
+  
+  <!-- Sidebar -->
+  <aside class="sidebar">
+    <div class="brand">
+      <i class="fa-solid fa-gamepad"></i>
+      <span>{{ title }}</span>
+    </div>
+    <nav class="nav-menu">
+      <div class="nav-item active" data-tab="protocol">
+        <i class="fa-solid fa-flask"></i> 协议测试
+      </div>
+      <div class="nav-item" data-tab="doc">
+        <i class="fa-solid fa-book"></i> 协议清单
+      </div>
+      <div class="nav-item" data-tab="gacha">
+        <i class="fa-solid fa-wand-magic-sparkles"></i> 抽卡模拟
+      </div>
+       <div class="nav-item" data-tab="battle">
+        <i class="fa-solid fa-shield-halved"></i> 数值比拼
+      </div>
     </nav>
-  </header>
+    <div class="sidebar-footer">
+      Powered by Protocol Platform
+    </div>
+  </aside>
 
-  <!-- 主内容区域 -->
-  <main class="container">
-    <!-- 协议测试面板，默认显示 (active) -->
-    <section class="panel active" id="tab-protocol">
-      
-      <!-- 全局配置区域 -->
-      <div class="row" style="border-bottom: 1px solid #ccc; padding-bottom: 10px; margin-bottom: 15px;">
-        <label class="label">全局服务器</label>
-        <div style="display: flex; gap: 10px; width: 100%;">
-          <input type="text" id="globalUrl" class="input" placeholder="{{ game_server }}" style="flex: 1;" />
-          <button id="saveGlobalUrl" class="btn">更新地址</button>
+  <!-- Main Content -->
+  <main class="main-content">
+    
+    <!-- Protocol Test View -->
+    <section class="view-section active" id="view-protocol">
+      <div class="page-header">
+        <h1 class="page-title">协议测试</h1>
+        <p class="page-desc">选择协议并配置参数进行接口调试。</p>
+      </div>
+
+      <div class="card">
+        <div class="grid-cols-2" style="align-items: end;">
+           <div class="form-group">
+            <label class="label">选择协议</label>
+            <select id="protocolSelect" class="select">
+              <option value="" disabled selected>加载中...</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="label">全局服务器地址</label>
+             <div style="display: flex; gap: 10px;">
+                <input type="text" id="globalUrl" class="input" placeholder="{{ game_server }}" />
+                <button id="saveGlobalUrl" class="btn btn-secondary">更新</button>
+             </div>
+          </div>
         </div>
       </div>
 
-      <div class="row">
-        <label class="label">协议列表</label>
-        <!-- 下拉框，后续通过 JS 加载数据 -->
-        <select id="protocolSelect" class="select"></select>
-      </div>
+      <div class="grid-cols-2">
+        <!-- Left: Input & Config -->
+        <div>
+          <div class="card">
+             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 16px;">
+                <h3 style="margin:0; font-size:16px;">请求参数</h3>
+                <span id="callTypeBadge" class="status-badge" style="background:#e5e7eb; color:#6b7280;">HTTP</span>
+             </div>
+             
+             <!-- Sub-case Selection -->
+             <div id="subCaseArea" style="display:none; margin-bottom: 20px;">
+                <label class="label">预设用例</label>
+                <div id="casePills" class="case-pills"></div>
+             </div>
 
-      <div class="row">
-        <label class="label">参数输入</label>
-        <!-- 参数表单区域，动态生成 -->
-        <div id="paramForm" class="param-form"></div>
-      </div>
+             <!-- Dynamic Form -->
+             <form id="paramForm"></form>
+          </div>
 
-      <div class="row">
-        <label class="label">扩展选项</label>
-        <div class="options">
-          <label><input type="checkbox" id="withRandom" /> 随机值</label>
-          <label>
-            并发
-            <input type="number" id="concurrency" value="1" min="1" max="50" />
-          </label>
-          <button id="callBtn" class="btn">发起调用</button>
+          <div class="card">
+            <h3 style="margin:0 0 16px 0; font-size:16px;">高级选项</h3>
+            <div class="form-group">
+               <label class="label">调用并发数</label>
+               <input type="number" id="concurrency" class="input" value="1" min="1" max="50" />
+            </div>
+            <div class="form-group">
+              <label style="display:flex; align-items:center; gap:8px; cursor:pointer;">
+                <input type="checkbox" id="withRandom" /> 
+                <span>启用随机参数 (Random Seed)</span>
+              </label>
+            </div>
+            <button id="callBtn" class="btn" style="width:100%;">
+              <i class="fa-solid fa-play" style="margin-right:8px;"></i> 发起调用
+            </button>
+          </div>
+        </div>
+
+        <!-- Right: Response -->
+        <div>
+          <div class="card">
+            <h3 style="margin:0 0 16px 0; font-size:16px;">响应结果</h3>
+            <div class="response-container">
+               <pre id="responseBox" class="response-box">等待调用...</pre>
+            </div>
+          </div>
+          
+          <div class="card">
+             <h3 style="margin:0 0 16px 0; font-size:16px;">协议说明</h3>
+             <div id="protocolDesc" style="font-size:14px; color:#4b5563; line-height:1.5;">
+               暂无说明
+             </div>
+          </div>
         </div>
       </div>
+    </section>
 
-      <div class="row">
-        <label class="label">协议说明</label>
-        <div id="protocolDesc" class="desc">请选择协议</div>
+    <!-- Protocol Doc View -->
+    <section class="view-section" id="view-doc">
+      <div class="page-header">
+        <h1 class="page-title">协议清单</h1>
+        <p class="page-desc">查看系统中定义的所有协议详情及其说明。</p>
       </div>
 
-      <div class="row">
-        <label class="label">返回数据</label>
-        <pre id="responseBox" class="response">等待调用</pre>
+      <div class="card">
+        <table class="proto-table">
+          <thead>
+             <tr>
+               <th>ID</th>
+               <th>协议名称</th>
+               <th>类型</th>
+               <th>说明</th>
+               <th>服务器信息</th>
+             </tr>
+          </thead>
+          <tbody id="docTableBody">
+             <tr><td colspan="5">加载中...</td></tr>
+          </tbody>
+        </table>
       </div>
     </section>
 
-    <!-- 抽卡面板 (占位) -->
-    <section class="panel" id="tab-gacha">
-      <div class="placeholder">抽卡页面（暂未实现细节）</div>
+    <!-- Placeholders -->
+    <section class="view-section" id="view-gacha">
+       <div class="page-header"><h1 class="page-title">抽卡模拟</h1></div>
+       <div class="card">功能开发中...</div>
+    </section>
+     <section class="view-section" id="view-battle">
+       <div class="page-header"><h1 class="page-title">数值比拼</h1></div>
+       <div class="card">功能开发中...</div>
     </section>
 
-    <!-- 数值比拼面板 (占位) -->
-    <section class="panel" id="tab-battle">
-      <div class="placeholder">数值比拼页面（暂未实现细节）</div>
-    </section>
   </main>
 
   <script>
-    // Tab 切换逻辑
-    const tabs = document.querySelectorAll('.tab');
-    const panels = document.querySelectorAll('.panel');
+    // --- State & Refs ---
+    const els = {
+      navItems: document.querySelectorAll('.nav-item'),
+      views: document.querySelectorAll('.view-section'),
+      protocolSelect: document.getElementById('protocolSelect'),
+      paramForm: document.getElementById('paramForm'),
+      responseBox: document.getElementById('responseBox'),
+      callBtn: document.getElementById('callBtn'),
+      protocolDesc: document.getElementById('protocolDesc'),
+      subCaseArea: document.getElementById('subCaseArea'),
+      casePills: document.getElementById('casePills'),
+      callTypeBadge: document.getElementById('callTypeBadge'),
+      docTableBody: document.getElementById('docTableBody'),
+      globalUrl: document.getElementById('globalUrl'),
+      saveGlobalUrl: document.getElementById('saveGlobalUrl')
+    };
 
-    tabs.forEach(tab => {
-      tab.addEventListener('click', () => {
-        // 移除所有 Tab 和 Panel 的激活状态
-        tabs.forEach(t => t.classList.remove('active'));
-        panels.forEach(p => p.classList.remove('active'));
-        // 激活当前点击的 Tab 和对应的 Panel
-        tab.classList.add('active');
-        document.getElementById(`tab-${tab.dataset.tab}`).classList.add('active');
+    let currentProtocolData = null;
+
+    // --- Navigation ---
+    els.navItems.forEach(item => {
+      item.addEventListener('click', () => {
+        const tabName = item.dataset.tab;
+        
+        // Update Nav UI
+        els.navItems.forEach(n => n.classList.remove('active'));
+        item.classList.add('active');
+
+        // Update View
+        els.views.forEach(v => v.classList.remove('active'));
+        document.getElementById(iew-).classList.add('active');
+
+        // Special actions
+        if (tabName === 'doc') loadDocTable();
       });
     });
 
-    // 页面元素引用
-    const protocolSelect = document.getElementById('protocolSelect');
-    const paramForm = document.getElementById('paramForm');
-    const protocolDesc = document.getElementById('protocolDesc');
-    const responseBox = document.getElementById('responseBox');
-    const callBtn = document.getElementById('callBtn');
-    const withRandom = document.getElementById('withRandom');
-    const concurrencyInput = document.getElementById('concurrency');
-    const globalUrlInput = document.getElementById('globalUrl');
-    const saveGlobalUrlBtn = document.getElementById('saveGlobalUrl');
+    // --- Core Logic ---
+    
+    // 1. Initial Load
+    fetch('/api/protocols')
+      .then(res => res.json())
+      .then(data => {
+        els.protocolSelect.innerHTML = '<option value="" disabled selected>请选择协议</option>';
+        data.forEach(p => {
+          const opt = document.createElement('option');
+          opt.value = p.id;
+          opt.textContent = [] ;
+          els.protocolSelect.appendChild(opt);
+        });
+      });
 
-    let currentProtocol = null;
+    // 2. Load Protocol Details
+    els.protocolSelect.addEventListener('change', (e) => {
+      const id = e.target.value;
+      if(!id) return;
 
-    /**
-     * 加载全局配置
-     */
-     async function loadGlobalConfig() {
-      const res = await fetch('/api/settings/global_target');
-      const data = await res.json();
-      globalUrlInput.value = data.url;
-    }
+      fetch(/api/protocol/)
+        .then(res => res.json())
+        .then(data => {
+          currentProtocolData = data;
+          renderProtocolUI(data);
+        });
+    });
 
-    saveGlobalUrlBtn.addEventListener('click', async () => {
-      const url = globalUrlInput.value.trim();
-      if (!url) return alert("请输入有效的URL");
+    function renderProtocolUI(data) {
+      // Basic Info
+      els.protocolDesc.textContent = data.description || '暂无说明';
+      els.callTypeBadge.textContent = (data.call_type || 'HTTP').toUpperCase();
       
-      const res = await fetch('/api/settings/global_target', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ url })
-      });
-      const data = await res.json();
-      if (data.status === 'ok') {
-        alert("全局目标地址更新成功");
-      }
-    });
+      // Render Sub-cases (Pills)
+      els.casePills.innerHTML = '';
+      if (data.test_cases && data.test_cases.length > 0) {
+        els.subCaseArea.style.display = 'block';
+        
+        // Add "Default" pill
+        const defaultPill = createPill('默认', data.params, true);
+        els.casePills.appendChild(defaultPill);
 
-    /**
-     * 加载协议列表
-     */
-    async function loadProtocols() {
-      const res = await fetch('/api/protocols');
-      const list = await res.json();
-      protocolSelect.innerHTML = '';
-      list.forEach(item => {
-        const opt = document.createElement('option');
-        opt.value = item.id;
-        opt.textContent = item.name;
-        protocolSelect.appendChild(opt);
-      });
-      // 默认加载第一个协议
-      if (list.length > 0) {
-        protocolSelect.value = list[0].id;
-        await loadProtocolDetail(list[0].id);
+        data.test_cases.forEach(c => {
+           // Merge: case params override default params
+           const mergedParams = { ...data.params, ...c.params };
+           const pill = createPill(c.name || 'Case', mergedParams, false);
+           els.casePills.appendChild(pill);
+        });
+
+      } else {
+        els.subCaseArea.style.display = 'none';
+        // Just render default form
+        renderForm(data.params);
       }
     }
 
-    /**
-     * 加载单个协议的详细配置，并生成参数表单
-     */
-    async function loadProtocolDetail(id) {
-      const res = await fetch(`/api/protocol/${id}`);
-      const data = await res.json();
-      currentProtocol = data;
-      protocolDesc.textContent = data.description || '无描述';
-
-      // 动态生成参数输入框
-      paramForm.innerHTML = '';
-      const params = data.params || {};
-      Object.keys(params).forEach(key => {
-        const config = params[key];
-        const row = document.createElement('div');
-        row.className = 'param-row';
-
-        const label = document.createElement('label');
-        label.textContent = key;
-        label.className = 'param-label';
-
-        const input = document.createElement('input');
-        input.className = 'input';
-        input.dataset.key = key;
-        input.value = config.default ?? ''; // 设置默认值
-        if (config.type === 'number') {
-          input.type = 'number';
-        } else {
-          input.type = 'text';
-        }
-
-        row.appendChild(label);
-        row.appendChild(input);
-        paramForm.appendChild(row);
-      });
-
-      // 显示示例返回值
-      responseBox.textContent = JSON.stringify(data.sample_return || {}, null, 2);
-    }
-
-    // 监听协议选择变化
-    protocolSelect.addEventListener('change', (e) => {
-      loadProtocolDetail(e.target.value);
-    });
-
-    // 监听调用按钮点击
-    callBtn.addEventListener('click', async () => {
-      if (!currentProtocol) return;
-      
-      // 收集参数
-      const inputs = paramForm.querySelectorAll('input');
-      const params = {};
-      inputs.forEach(input => {
-        params[input.dataset.key] = input.type === 'number' ? Number(input.value) : input.value;
-      });
-
-      responseBox.textContent = '请求中...';
-      const payload = {
-        params,
-        with_random: withRandom.checked,
-        concurrency: Number(concurrencyInput.value || 1)
+    function createPill(label, params, isActive) {
+      const btn = document.createElement('div');
+      btn.className = pill ;
+      btn.textContent = label;
+      btn.onclick = () => {
+         // UI toggle
+         document.querySelectorAll('.pill').forEach(p => p.classList.remove('active'));
+         btn.classList.add('active');
+         // Render Form
+         renderForm(params);
       };
       
-      // 发送 POST 请求调用协议
-      const res = await fetch(`/api/protocol/${currentProtocol.id}/call`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload)
-      });
-      const data = await res.json();
-      // 展示返回结果
-      responseBox.textContent = JSON.stringify(data, null, 2);
+      // If it's the default one being created first, render it immediately
+      if (isActive) renderForm(params);
+      
+      return btn;
+    }
+
+    function renderForm(params) {
+      els.paramForm.innerHTML = '';
+      if (!params || Object.keys(params).length === 0) {
+        els.paramForm.innerHTML = '<div style="color:#9ca3af; font-size:14px;">无需参数</div>';
+        return;
+      }
+
+      for (const [key, conf] of Object.entries(params)) {
+        const group = document.createElement('div');
+        group.className = 'form-group';
+        
+        const label = document.createElement('label');
+        label.className = 'label';
+        label.textContent = key; // Simple label, could use conf.description
+        
+        let input;
+        const val = (conf.default !== undefined) ? conf.default : '';
+
+        // Basic Type Handling
+        if (typeof conf === 'object' && conf.type === 'boolean') {
+           input = document.createElement('select');
+           input.className = 'select';
+           input.innerHTML = '<option value="true">True</option><option value="false">False</option>';
+           input.value = String(val);
+        } else {
+           input = document.createElement('input');
+           input.className = 'input';
+           input.value = val;
+           if (typeof conf === 'object' && conf.type === 'integer') {
+             input.type = 'number';
+           } else {
+             input.type = 'text';
+           }
+        }
+        
+        input.name = key;
+        group.appendChild(label);
+        group.appendChild(input);
+        els.paramForm.appendChild(group);
+      }
+    }
+
+    // 3. Document List
+    let docLoaded = false;
+    function loadDocTable() {
+      if(docLoaded) return;
+      
+      fetch('/api/doc')
+        .then(res => res.json())
+        .then(list => {
+           els.docTableBody.innerHTML = '';
+           list.forEach(item => {
+             const tr = document.createElement('tr');
+             
+             // Target Info
+             let target = '-';
+             if (item.target_config) {
+                if (item.target_config.url) target = item.target_config.url;
+                else if (item.target_config.host) target = ${item.target_config.host}:;
+             }
+
+             tr.innerHTML = 
+               <td>#</td>
+               <td><span style="font-weight:600;"></span></td>
+               <td><span class="code-snippet"></span></td>
+               <td style="color:#6b7280; font-size:13px;"></td>
+               <td style="font-size:13px;"></td>
+             ;
+             els.docTableBody.appendChild(tr);
+           });
+           docLoaded = true;
+        });
+    }
+
+    // 4. Call API
+    els.callBtn.addEventListener('click', () => {
+       if (!currentProtocolData) return alert('请先选择协议');
+       
+       els.callBtn.disabled = true;
+       els.callBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> 请求中...';
+       els.responseBox.textContent = '请求中...';
+       
+       // Gather params
+       const payload = { params: {} };
+       const formData = new FormData(els.paramForm);
+       
+       // Need to parse types based on currentProtocolData definition?
+       // For simplicity, we trust the backend or basic JS parsing
+       // But ideally, we should map back to defined types.
+       
+       // Simple mapping:
+       for (const [key, value] of formData.entries()) {
+           // Basic Number inference
+           if (!isNaN(value) && value.trim() !== '') {
+              payload.params[key] = Number(value);
+           } else if (value === 'true') {
+              payload.params[key] = true;
+           } else if (value === 'false') {
+              payload.params[key] = false;
+           } else {
+              payload.params[key] = value;
+           }
+       }
+       
+       const concurrency = document.getElementById('concurrency').value;
+       const withRandom = document.getElementById('withRandom').checked;
+       
+       payload.concurrency = concurrency;
+       payload.with_random = withRandom;
+
+       fetch(/api/protocol//call, {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify(payload)
+       })
+       .then(res => res.json())
+       .then(data => {
+          els.responseBox.textContent = JSON.stringify(data, null, 2);
+       })
+       .catch(err => {
+          els.responseBox.textContent = 'Error: ' + err;
+       })
+       .finally(() => {
+          els.callBtn.disabled = false;
+          els.callBtn.innerHTML = '<i class="fa-solid fa-play" style="margin-right:8px;"></i> 发起调用';
+       });
     });
 
-    // 页面加载完成后，加载协议列表
-    loadProtocols();
-    loadGlobalConfig();
   </script>
 </body>
 </html>
