@@ -1,7 +1,8 @@
 import json
+from datetime import datetime
 from urllib.parse import urljoin
-from typing import Dict, Any, Type
-from app.database import get_setting
+from typing import Dict, Any, Type, Optional
+from app.database import get_setting, get_db
 from app.config import GAME_SERVER
 from .base import BaseProtocolHandler
 from .http import HttpProtocolHandler
@@ -54,3 +55,40 @@ def execute_protocol(protocol_row: Dict[str, Any], params: Dict[str, Any]) -> Di
         return handler.execute(config, params)
     except Exception as e:
         return {"error": str(e)}
+
+def log_protocol_test(
+    username: str,
+    protocol_name: str,
+    target_url: str,
+    request_params: Any,
+    response_data: Any,
+    assertions: Any = None
+):
+    """
+    记录协议测试历史到数据库。
+    """
+    try:
+        db = get_db()
+        db.execute(
+            """
+            INSERT INTO history (
+                username, action, protocol_name, target_url, 
+                request_body, response_body, assertions, created_at
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+            """,
+            (
+                username, 
+                "test_protocol", 
+                protocol_name, 
+                target_url,
+                json.dumps(request_params, ensure_ascii=False) if not isinstance(request_params, str) else request_params,
+                json.dumps(response_data, ensure_ascii=False) if not isinstance(response_data, str) else response_data,
+                json.dumps(assertions, ensure_ascii=False) if assertions and not isinstance(assertions, str) else (assertions or "[]"),
+                datetime.utcnow().isoformat() + "Z"
+            ),
+        )
+        db.commit()
+    except Exception as e:
+        # 避免日志记录失败影响主流程，仅打印错误
+        print(f"Failed to log history: {e}")
+

@@ -4,7 +4,7 @@ from datetime import datetime
 from flask import Blueprint, jsonify, request, session
 from loguru import logger
 from app.database import get_db, get_setting, set_setting
-from app.connect import execute_protocol
+from app.connect import execute_protocol, log_protocol_test
 from app.config import GAME_SERVER
 
 # 创建 API 蓝图
@@ -37,21 +37,6 @@ def get_doc():
             "target_config": json.loads(row["target_config_json"] or "{}"),
         })
     return jsonify(results)
-
-@bp.route("/settings/global_target", methods=["GET", "POST"])
-def handle_global_target():
-    """获取或设置全局目标地址"""
-    if request.method == "POST":
-        data = request.get_json()
-        url = data.get("url")
-        if url:
-            set_setting("global_target_url", url)
-            return jsonify({"status": "ok", "url": url})
-        return jsonify({"error": "Missing url"}), 400
-    else:
-        url = get_setting("global_target_url", GAME_SERVER)
-        return jsonify({"url": url})
-
 
 @bp.route("/protocol/<int:protocol_id>", methods=["GET"])
 def get_protocol_detail(protocol_id: int):
@@ -140,6 +125,31 @@ def call_protocol(protocol_id: int):
 
     results = [build_response(i + 1) for i in range(max(concurrency, 1))]
 
+    if session.get("username"):
+        try:
+             # 简单解析目标地址用于记录
+            target_config = json.loads(row["target_config_json"] or "{}")
+            call_type = (row["call_type"] or "socket").lower()
+            if call_type == "http":
+                # 再次获取 global setting 以拼凑完整 URL (仅做展示用)
+                global_url = get_setting("global_target_url", GAME_SERVER)
+                rel_url = target_config.get("url", "")
+                from urllib.parse import urljoin
+                target_info = urljoin(global_url, rel_url) if not rel_url.startswith("http") else rel_url
+            else:
+                target_info = f"{target_config.get('host')}:{target_config.get('port')}"
+
+            log_protocol_test(
+                username=session["username"],
+                protocol_name=row["name"],
+                target_url=target_info,
+                request_params=params,
+                response_data=results, # 记录所有并发结果
+                assertions=assertions
+            )
+        except Exception as e:
+            logger.error(f"Failed to log protocol test: {e}")
+
     return jsonify(
         {
             "protocol_id": protocol_id,
@@ -161,23 +171,3 @@ def login():
     session["username"] = username
     logger.info(f"User login: {username}")
     return jsonify({"ok": True, "username": username})
-
-@bp.route("/history", methods=["POST"])
-def add_history():
-    """添加历史记录"""
-    payload = request.get_json(silent=True) or {}
-    username = (payload.get("username") or session.get("username") or "").strip()
-    action = (payload.get("action") or "").strip()
-    
-    if not username or not action:
-        return jsonify({"error": "username and action required"}), 400
-
-    db = get_db()
-    db.execute(
-        "INSERT INTO history (username, action, created_at) VALUES (?, ?, ?)",
-        (username, action, datetime.utcnow().isoformat() + "Z"),
-    )
-    db.commit()
-
-    logger.info(f"History: {username} - {action}")
-    return jsonify({"ok": True})

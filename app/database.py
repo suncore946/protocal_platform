@@ -90,12 +90,31 @@ def init_db(app):
             CREATE TABLE IF NOT EXISTS history (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 username TEXT NOT NULL,
-                action TEXT NOT NULL,
+                action TEXT,  -- 简要描述或操作类型
+                protocol_name TEXT,
+                target_url TEXT,
+                request_body TEXT,  -- JSON
+                response_body TEXT, -- JSON
+                assertions TEXT,    -- JSON
                 created_at TEXT NOT NULL
             );
             """
         )
         conn.commit()
+
+        # 尝试为历史表添加新字段
+        new_cols = [
+            ("protocol_name", "TEXT"),
+            ("target_url", "TEXT"),
+            ("request_body", "TEXT"),
+            ("response_body", "TEXT"),
+            ("assertions", "TEXT")
+        ]
+        for col_name, col_type in new_cols:
+            try:
+                cur.execute(f"ALTER TABLE history ADD COLUMN {col_name} {col_type}")
+            except sqlite3.OperationalError:
+                pass
 
         # 检查并更新默认协议数据
         # 遍历 PROTOCOL_DEFAULTS，如果不存在则插入
