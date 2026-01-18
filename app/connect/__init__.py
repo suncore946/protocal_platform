@@ -39,16 +39,15 @@ def execute_protocol(protocol_row: Dict[str, Any], params: Dict[str, Any]) -> Di
     
     config = target_config.copy()
 
-    # 处理全局 URL (仅针对 HTTP)
-    if call_type == CallType.HTTP:
-        global_url = db.get_setting("global_target_url", GAME_SERVER)
-        relative_url = config.get("url", "")
-        # 如果是相对路径或为空，则拼接全局 URL
-        if not relative_url.lower().startswith(("http://", "https://")):
-            # urljoin 处理 path 拼接很智能
-            # 比如 base="http://a.com/api", path="/login" -> "http://a.com/login"
-            # 比如 base="http://a.com/api/", path="login" -> "http://a.com/api/login"
-            config["url"] = urljoin(global_url, relative_url)
+    # 处理全局 URL
+    global_url = db.get_setting("global_target_url", GAME_SERVER)
+    relative_url = config.get("url", "")
+    # 如果是相对路径或为空，则拼接全局 URL
+    if not relative_url.lower().startswith(("http://", "https://")):
+        # urljoin 处理 path 拼接很智能
+        # 比如 base="http://a.com/api", path="/login" -> "http://a.com/login"
+        # 比如 base="http://a.com/api/", path="login" -> "http://a.com/api/login"
+        config["url"] = urljoin(global_url, relative_url)
     
     try:
         handler = get_handler(call_type)
@@ -56,7 +55,7 @@ def execute_protocol(protocol_row: Dict[str, Any], params: Dict[str, Any]) -> Di
     except Exception as e:
         return {"error": str(e)}
 
-def log_protocol_test(
+def log_protocol_history(
     username: str,
     protocol_name: str,
     target_url: str,

@@ -4,7 +4,7 @@ from datetime import datetime
 from flask import Blueprint, jsonify, request, session
 from loguru import logger
 from app.database import db
-from app.connect import execute_protocol, log_protocol_test
+from app.connect import execute_protocol, log_protocol_history
 from app.config import GAME_SERVER
 
 # 创建 API 蓝图
@@ -139,7 +139,7 @@ def call_protocol(protocol_id: int):
             else:
                 target_info = f"{target_config.get('host')}:{target_config.get('port')}"
 
-            log_protocol_test(
+            log_protocol_history(
                 username=session["username"],
                 protocol_name=row["name"],
                 target_url=target_info,
