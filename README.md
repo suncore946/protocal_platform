@@ -28,7 +28,8 @@ conda activate protocol-demo
 ### Windows (PowerShell)
 
 ```powershell
-cd "e:\桌面\新建文件夹"
+# 进入项目目录
+cd ./protocal_platform
 python -m venv .venv
 .venv\Scripts\Activate.ps1
 ```
@@ -36,7 +37,7 @@ python -m venv .venv
 ### macOS / Linux
 
 ```bash
-cd /path/to/project
+cd ./protocal_platform
 python3 -m venv .venv
 source .venv/bin/activate
 ```
@@ -115,7 +116,7 @@ pip install waitress
 ### 启动
 
 ```bash
-waitress-serve --listen=0.0.0.0:5000 app:app
+waitress-serve --listen=0.0.0.0:5000 run:app
 ```
 
 ## 9. 生产部署（Linux 示例：Gunicorn）
@@ -131,20 +132,20 @@ pip install gunicorn
 ### 运行（示例）
 
 ```bash
-gunicorn -w 2 -b 0.0.0.0:5000 app:app
+gunicorn -w 2 -b 0.0.0.0:5000 run:app
 ```
 
 ## 10. 数据库说明
 
 - 使用 SQLite3，首次启动自动建表
-- 协议表：`protocol`
+- 全局设置表：`settings`
 - 操作历史表：`history`
+- *注意：协议定义实时读取自 `test_cases/` 目录下的文件，不存储在数据库中*
 
 ## 11. 日志说明
 
 - 使用 Loguru
 - 日志文件位置：由 `config.yaml -> app.log_file` 指定
-- 日志滚动：10MB 分片，保留 10 天
 
 ## 12. 快速构建协议测试请求
 
@@ -207,60 +208,57 @@ gunicorn -w 2 -b 0.0.0.0:5000 app:app
 
 ---
 
-## 13. 快速接入新协议（项目配置）
+## 13. 快速接入新协议
 
-通过修改 `config.yaml` 可以在不写代码的情况下（针对 HTTP）或极少量代码的情况下（针对 Local/Socket）快速接入新协议。
+本平台支持通过添加 YAML 配置文件的方式快速接入新协议，无需修改代码。
 
 ### 接入步骤
 
-1. **编辑配置**：打开项目根目录下的 `config.yaml`。
-2. **添加定义**：在 `protocol_defaults` 列表下追加新的协议配置块。
-3. **重启生效**：运行 `python run.py` 重启服务。系统启动时会将新协议自动写入数据库。
-
-> **注意**：系统通过 `name` 字段判断协议是否存在。如果数据库中已存在同名协议，修改配置文件**不会**覆盖原有数据。若需强制更新，请修改协议名称（如加上版本号）或删除 `app.db` 文件。
+1. **新建文件**：在 `test_cases/` 目录下创建一个新的 `.yaml` 文件（例如 `my_api.yaml`）。
+2. **编写配置**：参照下方的格式编写协议定义。
+3. **即时生效**：保存文件后，刷新页面或调用接口即可看到新协议，**不需要重启服务**。
 
 ### 配置字段详解
 
+配置文件（YAML）支持以下根字段：
+
 | 字段 | 必填 | 说明 |
 | :--- | :--- | :--- |
-| `name` | 是 | 协议的唯一标识名称。 |
-| `description` | 否 | 协议描述，展示在前端界面。 |
-| `call_type` | 是 | 调用类型。支持 `http`, `local`, `socket`, `protobuf`。 |
-| `target_config` | 是 | 目标配置对象。`http` 需配置 `url`, `method`；`local` 需配置 `method`。 |
+| `name` | 是 | 协议的名称，显示在列表中。 |
+| `description` | 否 | 协议描述/说明。 |
+| `call_type` | 是 | 调用类型。支持 `http`, `socket`, `protobuf`。 |
+| `target_config` | 是 | 目标配置对象。`http` 需配置 `url`, `method`；`socket` 需配置 `ip`, `port` 等。 |
 | `params` | 否 | 参数定义字典。用于前端自动生成输入表单，支持设置 `default` 值。 |
 | `assertions` | 否 | **默认断言规则**。Python 表达式列表，用于验证响应是否符合预期。 |
 | `sample_return` | 否 | 示例返回值。用于前端展示结构，或在实际调用失败/Mock模式下作为兜底返回。 |
 
 ### 典型配置示例
 
-#### 示例 1: 接入 HTTP 接口（带断言）
-
-无需编写 Python 代码，直接配置即可测试外部接口。
+#### 示例 1: 接入 HTTP 接口
 
 ```yaml
-  - name: "用户下单接口"
-    call_type: "http"
-    description: "测试商城下单逻辑，验证余额扣除"
-    target_config:
-      # 若 URL 不以 http 开头，将自动拼接前端设置的全局服务器地址
-      url: "/api/order/create"
-      method: "POST"
-    params:
-      goods_id:
-        type: "number"
-        default: 10086
-      count:
-        type: "number"
-        default: 1
-    # 配置默认断言，每次调用都会自动检查
-    assertions:
-      - "response['code'] == 0"
-      - "response['data']['order_status'] == 'pending'"
-    sample_return:
-      code: 0
-      message: "success"
-      data:
-        order_id: "ORD-9999"
+name: "用户下单接口"
+call_type: "http"
+description: "测试商城下单逻辑，验证余额扣除"
+target_config:
+  # 相对路径会自动拼接 config.yaml 中的 global_target_url，也可以写绝对路径
+  url: "/api/order/create"
+  method: "POST"
+params:
+  goods_id:
+    type: "number"
+    default: 10086
+  count:
+    type: "number"
+    default: 1
+assertions:
+  - "response['code'] == 0"
+  - "response['data']['order_status'] == 'pending'"
+sample_return:
+  code: 0
+  message: "success"
+  data:
+    order_id: "ORD-9999"
 ```
 
 #### 实例2: 接入Protobuf协议
