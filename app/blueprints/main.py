@@ -1,5 +1,5 @@
 from flask import Blueprint, render_template
-from app.config import TITLE
+from app.config import TITLE, GAME_SERVER
 
 # 创建 Main 蓝图
 bp = Blueprint('main', __name__)
@@ -7,4 +7,4 @@ bp = Blueprint('main', __name__)
 @bp.route("/")
 def index():
     """首页路由"""
-    return render_template("index.html", title=TITLE)
+    return render_template("index.html", title=TITLE, game_server=GAME_SERVER)

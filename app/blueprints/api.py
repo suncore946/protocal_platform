@@ -5,6 +5,7 @@ from flask import Blueprint, jsonify, request, session
 from loguru import logger
 from app.database import get_db, get_setting, set_setting
 from app.connect import execute_protocol
+from app.config import GAME_SERVER
 
 # 创建 API 蓝图
 bp = Blueprint('api', __name__, url_prefix='/api')
@@ -48,7 +49,7 @@ def handle_global_target():
             return jsonify({"status": "ok", "url": url})
         return jsonify({"error": "Missing url"}), 400
     else:
-        url = get_setting("global_target_url", "http://game_backend.com")
+        url = get_setting("global_target_url", GAME_SERVER)
         return jsonify({"url": url})
 
 

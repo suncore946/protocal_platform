@@ -1,7 +1,7 @@
 import sqlite3
 import json
 from flask import g, current_app
-from app.config import DB_PATH, PROTOCOL_DEFAULTS
+from app.config import DB_PATH, PROTOCOL_DEFAULTS, GAME_SERVER
 
 def get_db():
     """
@@ -82,7 +82,7 @@ def init_db(app):
         )
 
         # 初始化默认设置
-        cur.execute("INSERT OR IGNORE INTO settings (key, value) VALUES (?, ?)", ('global_target_url', 'http://game_backend.com'))
+        cur.execute("INSERT OR IGNORE INTO settings (key, value) VALUES (?, ?)", ('global_target_url', GAME_SERVER))
         
         # 创建历史记录表
         cur.execute(

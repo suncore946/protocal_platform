@@ -2,6 +2,7 @@ import json
 from urllib.parse import urljoin
 from typing import Dict, Any, Type
 from app.database import get_setting
+from app.config import GAME_SERVER
 from .base import BaseProtocolHandler
 from .http import HttpProtocolHandler
 from .socket import SocketProtocolHandler
@@ -39,7 +40,7 @@ def execute_protocol(protocol_row: Dict[str, Any], params: Dict[str, Any]) -> Di
 
     # 处理全局 URL (仅针对 HTTP)
     if call_type == CallType.HTTP:
-        global_url = get_setting("global_target_url", "http://game_backend.com")
+        global_url = get_setting("global_target_url", GAME_SERVER)
         relative_url = config.get("url", "")
         # 如果是相对路径或为空，则拼接全局 URL
         if not relative_url.lower().startswith(("http://", "https://")):

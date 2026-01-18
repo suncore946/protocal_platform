@@ -4,6 +4,7 @@ app:
   secret_key: "dev-secret-key"
   db_path: "app.db"
   log_file: "logs/app.log"
+  game_server: "http://game_backend.com"
 
 protocol_defaults:
   - name: "HTTP测试"

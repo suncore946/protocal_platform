@@ -25,6 +25,7 @@ LOG_PATH = BASE_DIR / APP_CONFIG.get("log_file", "logs/app.log")
 # 应用配置
 SECRET_KEY = APP_CONFIG.get("secret_key", "dev-secret-key")
 TITLE = APP_CONFIG.get("title", "协议测试平台")
+GAME_SERVER = APP_CONFIG.get("game_server", "http://game_backend.com")
 
 # 数据默认值
 PROTOCOL_DEFAULTS = _config_data.get("protocol_defaults", [])
