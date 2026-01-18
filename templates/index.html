@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <!-- 使用后端传递的 title 变量 -->
+  <title>{{ title }}</title>
+  <link rel="stylesheet" href="/static/style.css" />
+</head>
+<body>
+  <!-- 顶部导航栏 -->
+  <header class="navbar">
+    <div class="brand">{{ title }}</div>
+    <nav class="tabs">
+      <!-- data-tab 属性用于关联下方的内容区域 -->
+      <button class="tab active" data-tab="protocol">协议测试</button>
+      <button class="tab" data-tab="gacha">抽卡</button>
+      <button class="tab" data-tab="battle">数值比拼</button>
+    </nav>
+  </header>
+
+  <!-- 主内容区域 -->
+  <main class="container">
+    <!-- 协议测试面板，默认显示 (active) -->
+    <section class="panel active" id="tab-protocol">
+      
+      <!-- 全局配置区域 -->
+      <div class="row" style="border-bottom: 1px solid #ccc; padding-bottom: 10px; margin-bottom: 15px;">
+        <label class="label">全局服务器</label>
+        <div style="display: flex; gap: 10px; width: 100%;">
+          <input type="text" id="globalUrl" class="input" placeholder="http://game_backend.com" style="flex: 1;" />
+          <button id="saveGlobalUrl" class="btn">更新地址</button>
+        </div>
+      </div>
+
+      <div class="row">
+        <label class="label">协议列表</label>
+        <!-- 下拉框，后续通过 JS 加载数据 -->
+        <select id="protocolSelect" class="select"></select>
+      </div>
+
+      <div class="row">
+        <label class="label">参数输入</label>
+        <!-- 参数表单区域，动态生成 -->
+        <div id="paramForm" class="param-form"></div>
+      </div>
+
+      <div class="row">
+        <label class="label">扩展选项</label>
+        <div class="options">
+          <label><input type="checkbox" id="withRandom" /> 随机值</label>
+          <label>
+            并发
+            <input type="number" id="concurrency" value="1" min="1" max="50" />
+          </label>
+          <button id="callBtn" class="btn">发起调用</button>
+        </div>
+      </div>
+
+      <div class="row">
+        <label class="label">协议说明</label>
+        <div id="protocolDesc" class="desc">请选择协议</div>
+      </div>
+
+      <div class="row">
+        <label class="label">返回数据</label>
+        <pre id="responseBox" class="response">等待调用</pre>
+      </div>
+    </section>
+
+    <!-- 抽卡面板 (占位) -->
+    <section class="panel" id="tab-gacha">
+      <div class="placeholder">抽卡页面（暂未实现细节）</div>
+    </section>
+
+    <!-- 数值比拼面板 (占位) -->
+    <section class="panel" id="tab-battle">
+      <div class="placeholder">数值比拼页面（暂未实现细节）</div>
+    </section>
+  </main>
+
+  <script>
+    // Tab 切换逻辑
+    const tabs = document.querySelectorAll('.tab');
+    const panels = document.querySelectorAll('.panel');
+
+    tabs.forEach(tab => {
+      tab.addEventListener('click', () => {
+        // 移除所有 Tab 和 Panel 的激活状态
+        tabs.forEach(t => t.classList.remove('active'));
+        panels.forEach(p => p.classList.remove('active'));
+        // 激活当前点击的 Tab 和对应的 Panel
+        tab.classList.add('active');
+        document.getElementById(`tab-${tab.dataset.tab}`).classList.add('active');
+      });
+    });
+
+    // 页面元素引用
+    const protocolSelect = document.getElementById('protocolSelect');
+    const paramForm = document.getElementById('paramForm');
+    const protocolDesc = document.getElementById('protocolDesc');
+    const responseBox = document.getElementById('responseBox');
+    const callBtn = document.getElementById('callBtn');
+    const withRandom = document.getElementById('withRandom');
+    const concurrencyInput = document.getElementById('concurrency');
+    const globalUrlInput = document.getElementById('globalUrl');
+    const saveGlobalUrlBtn = document.getElementById('saveGlobalUrl');
+
+    let currentProtocol = null;
+
+    /**
+     * 加载全局配置
+     */
+     async function loadGlobalConfig() {
+      const res = await fetch('/api/settings/global_target');
+      const data = await res.json();
+      globalUrlInput.value = data.url;
+    }
+
+    saveGlobalUrlBtn.addEventListener('click', async () => {
+      const url = globalUrlInput.value.trim();
+      if (!url) return alert("请输入有效的URL");
+      
+      const res = await fetch('/api/settings/global_target', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ url })
+      });
+      const data = await res.json();
+      if (data.status === 'ok') {
+        alert("全局目标地址更新成功");
+      }
+    });
+
+    /**
+     * 加载协议列表
+     */
+    async function loadProtocols() {
+      const res = await fetch('/api/protocols');
+      const list = await res.json();
+      protocolSelect.innerHTML = '';
+      list.forEach(item => {
+        const opt = document.createElement('option');
+        opt.value = item.id;
+        opt.textContent = item.name;
+        protocolSelect.appendChild(opt);
+      });
+      // 默认加载第一个协议
+      if (list.length > 0) {
+        protocolSelect.value = list[0].id;
+        await loadProtocolDetail(list[0].id);
+      }
+    }
+
+    /**
+     * 加载单个协议的详细配置，并生成参数表单
+     */
+    async function loadProtocolDetail(id) {
+      const res = await fetch(`/api/protocol/${id}`);
+      const data = await res.json();
+      currentProtocol = data;
+      protocolDesc.textContent = data.description || '无描述';
+
+      // 动态生成参数输入框
+      paramForm.innerHTML = '';
+      const params = data.params || {};
+      Object.keys(params).forEach(key => {
+        const config = params[key];
+        const row = document.createElement('div');
+        row.className = 'param-row';
+
+        const label = document.createElement('label');
+        label.textContent = key;
+        label.className = 'param-label';
+
+        const input = document.createElement('input');
+        input.className = 'input';
+        input.dataset.key = key;
+        input.value = config.default ?? ''; // 设置默认值
+        if (config.type === 'number') {
+          input.type = 'number';
+        } else {
+          input.type = 'text';
+        }
+
+        row.appendChild(label);
+        row.appendChild(input);
+        paramForm.appendChild(row);
+      });
+
+      // 显示示例返回值
+      responseBox.textContent = JSON.stringify(data.sample_return || {}, null, 2);
+    }
+
+    // 监听协议选择变化
+    protocolSelect.addEventListener('change', (e) => {
+      loadProtocolDetail(e.target.value);
+    });
+
+    // 监听调用按钮点击
+    callBtn.addEventListener('click', async () => {
+      if (!currentProtocol) return;
+      
+      // 收集参数
+      const inputs = paramForm.querySelectorAll('input');
+      const params = {};
+      inputs.forEach(input => {
+        params[input.dataset.key] = input.type === 'number' ? Number(input.value) : input.value;
+      });
+
+      responseBox.textContent = '请求中...';
+      const payload = {
+        params,
+        with_random: withRandom.checked,
+        concurrency: Number(concurrencyInput.value || 1)
+      };
+      
+      // 发送 POST 请求调用协议
+      const res = await fetch(`/api/protocol/${currentProtocol.id}/call`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+      const data = await res.json();
+      // 展示返回结果
+      responseBox.textContent = JSON.stringify(data, null, 2);
+    });
+
+    // 页面加载完成后，加载协议列表
+    loadProtocols();
+    loadGlobalConfig();
+  </script>
+</body>
+</html>

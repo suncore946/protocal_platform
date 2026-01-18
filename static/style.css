@@ -1,0 +1,109 @@
+/* 全局重置: 所有元素包含边框和内边距在宽高计算内 */
+* { box-sizing: border-box; }
+
+/* 页面主体样式 */
+body {
+  margin: 0;
+  font-family: "Segoe UI", Arial, sans-serif;
+  background: #f6f8fb; /* 浅灰背景，护眼 */
+  color: #1f2a37;      /* 深灰文字，易读 */
+}
+
+/* 顶部导航栏样式 */
+.navbar {
+  display: flex;       /* 使用 Flex 布局 */
+  align-items: center; /* 垂直居中 */
+  justify-content: space-between; /* 两端对齐 */
+  padding: 16px 24px;
+  background: #0f172a; /* 深蓝黑色背景 */
+  color: #fff;
+}
+
+.brand { font-size: 18px; font-weight: 600; }
+
+.tabs { display: flex; gap: 8px; }
+
+/* 导航 Tab 按钮样式 */
+.tab {
+  border: none;
+  background: transparent;
+  color: #cbd5f5;
+  padding: 8px 14px;
+  cursor: pointer;
+  border-radius: 6px;
+  transition: all 0.2s; /* 添加过渡动画效果 */
+}
+
+/* 激活状态的 Tab */
+.tab.active {
+  background: #1e293b;
+  color: #fff;
+}
+
+/* 主容器，限制最大宽度并居中 */
+.container { max-width: 980px; margin: 24px auto; padding: 0 16px; }
+
+/* 面板默认隐藏 */
+.panel {
+  display: none; 
+  background: #fff; 
+  padding: 20px; 
+  border-radius: 10px; 
+  box-shadow: 0 6px 18px rgba(15,23,42,0.08); /* 柔和阴影 */
+}
+
+/* 激活的面板显示 */
+.panel.active { display: block; }
+
+/* 每一行的间距 */
+.row { margin-bottom: 16px; }
+
+.label { display: block; font-weight: 600; margin-bottom: 8px; }
+
+/* 输入框和下拉框通用样式 */
+.select, .input, #concurrency {
+  width: 100%;
+  padding: 8px 10px;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  background: #fff;
+}
+
+/* 选项区域横向排列 */
+.options {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+
+/* 按钮样式 */
+.btn {
+  border: none;
+  padding: 8px 14px;
+  background: #2563eb; /* 亮蓝色 */
+  color: #fff;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.btn:hover { background: #1d4ed8; }
+
+.param-form { display: flex; flex-direction: column; gap: 10px; }
+.param-row { display: flex; gap: 10px; align-items: center; }
+.param-label { width: 140px; color: #4b5563; }
+
+/* 描述区域背景 */
+.desc { padding: 10px; background: #f3f4f6; border-radius: 6px; color: #4b5563; }
+
+/* JSON 返回值展示区域，深色背景代码风格 */
+.response {
+  background: #0b1020;
+  color: #a5b4fc;
+  padding: 12px;
+  border-radius: 6px;
+  min-height: 140px;
+  overflow-x: auto; /* 内容过长时显示滚动条 */
+  font-family: Consolas, Monaco, "Courier New", monospace;
+}
+
+.placeholder { padding: 40px; text-align: center; color: #6b7280; }

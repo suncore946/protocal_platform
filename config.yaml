@@ -1,0 +1,90 @@
+app:
+  title: "协议测试平台"
+  secret_key: "dev-secret-key"
+  db_path: "app.db"
+  log_file: "logs/app.log"
+protocol_defaults:
+  - name: "用户查询"
+    call_type: "local"
+    target_config:
+      method: "user_query"
+    description: "根据用户ID查询用户基础信息。"
+    params:
+      user_id:
+        type: "string"
+        default: "10001"
+        required: true
+    sample_return:
+      code: 0
+      message: "ok"
+      data:
+        user_id: "10001"
+        name: "张三"
+        level: 12
+  - name: "订单创建"
+    call_type: "local"
+    target_config:
+      method: "order_create"
+    description: "创建订单并返回订单ID。"
+    params:
+      amount:
+        type: "number"
+        default: 99.5
+        required: true
+      currency:
+        type: "string"
+        default: "CNY"
+        required: true
+    sample_return:
+      code: 0
+      message: "ok"
+      data:
+        order_id: "ODR-20240101-0001"
+        amount: 99.5
+        currency: "CNY"
+  - name: "HTTP测试"
+    call_type: "http"
+    target_config:
+      url: "https://httpbin.org/get"
+      method: "GET"
+    description: "调用外部HTTP接口测试"
+    params:
+      test_param:
+        type: "string"
+        default: "hello"
+    sample_return:
+      url: "https://httpbin.org/get"
+      args:
+        test_param: "hello"
+  - name: "Socket测试"
+    call_type: "socket"
+    target_config:
+      host: "127.0.0.1"
+      port: 8888
+    description: "调用TCP Socket接口测试(需本地启动服务)"
+    params:
+      msg:
+        type: "string"
+        default: "ping"
+    sample_return:
+      response: "pong"
+  - name: "Protobuf测试"
+    call_type: "protobuf"
+    target_config:
+      host: "127.0.0.1"
+      port: 9999
+      proto_module: "app.protos.demo_pb2"
+      request_class: "UserRequest"
+      response_class: "UserResponse"
+    description: "Protobuf Over TCP 测试"
+    params:
+      user_id:
+        type: "string"
+        default: "p001"
+      detail:
+        type: "boolean"
+        default: true
+    sample_return:
+      user_id: "p001"
+      name: "ProtoUser"
+      level: 99
