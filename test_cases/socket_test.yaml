@@ -1,0 +1,16 @@
+name: "Socket测试"
+call_type: "socket"
+target_config:
+  host: "127.0.0.1"
+  port: 8888
+description: "调用TCP Socket接口测试(需本地启动服务)"
+params:
+  msg:
+    type: "string"
+    default: "ping"
+sample_return:
+  response: "pong"
+test_cases:
+  - name: "Ping"
+    params:
+      msg: "ping"

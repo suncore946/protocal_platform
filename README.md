@@ -51,18 +51,20 @@ pip install -r requirements.txt
 
 ## 4. 配置说明
 
-- 配置文件：[config.yaml](config.yaml)
-- 关键配置项：
-  - `app.title`：页面标题
-  - `app.secret_key`：Flask Session 密钥
-  - `app.db_path`：SQLite 数据库文件
-  - `app.log_file`：日志文件路径
-- 初始协议数据可在 `protocol_defaults` 中维护
+- **主配置文件**：[config.yaml](config.yaml)，负责全局设置（如页面标题、数据库路径、日志等）。
+- **协议配置文件**：`test_cases/` 目录下的所有 `.yaml` 文件。每个文件定义一个协议及其测试用例。
+
+### 初始协议数据
+
+协议数据不再存储在 `config.yaml` 中，而是分散管理在 `test_cases` 目录下。例如：
+
+- `test_cases/game_login.yaml` - 游戏登录协议
+- `test_cases/http_test.yaml` - HTTP 测试协议
 
 ## 5. 初始化与启动（开发模式）
 
 ```bash
-python app.py
+python run.py
 ```
 
 启动后访问：
@@ -73,15 +75,23 @@ python app.py
 
 ```text
 .
-├── app.py
-├── config.yaml
+├── run.py                 # 启动入口 (原 app.py)
+├── config.yaml            # 全局配置
+├── test_cases/            # [新增] 协议定义与测试用例目录 (YAML)
+│   ├── game_login.yaml
+│   └── ...
+├── app/
+│   ├── protos/            # Protobuf 协议定义 (Python Dataclasses)
+│   ├── blueprints/        # 路由蓝图
+│   ├── connect/           # 协议连接适配器
+│   ├── config.py          # 配置加载逻辑
+│   ├── database.py        # 数据库模型
+│   └── __init__.py        # App Factory
 ├── requirements.txt
-├── app.db              # 首次启动自动生成
-├── logs/               # 日志目录（自动生成）
+├── app.db                 # 数据库 (自动生成)
+├── logs/                  # 日志
 ├── templates/
-│   └── index.html
 └── static/
-    └── style.css
 ```
 
 ## 7. 常用接口

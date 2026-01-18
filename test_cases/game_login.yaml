@@ -1,0 +1,49 @@
+name: "游戏登录协议(Protobuf)"
+call_type: "protobuf"
+target_config:
+  host: "127.0.0.1"
+  port: 9000
+  proto_module: "app.protos.game_pure"
+  request_class: "LoginRequest"
+  response_class: "LoginResponse"
+description: "模拟游戏客户端登录请求"
+params:
+  username:
+    type: "string"
+    default: "test_user"
+  password:
+    type: "string"
+    default: "password123"
+  server_id:
+    type: "integer"
+    default: 1001
+  device_id:
+    type: "string"
+    default: "android_uuid_001"
+sample_return:
+    result_code: 0
+    error_message: ""
+    token: "abcdef-123456"
+    profile:
+        user_id: 1001
+        nickname: "GameMaster"
+        level: 10
+test_cases:
+  - name: "常规登录"
+    params:
+      username: "player1"
+      password: "123"
+      server_id: 1001
+      device_id: "dev001"
+  - name: "密码错误测试"
+    params:
+      username: "player1"
+      password: "wrong_password"
+      server_id: 1001
+      device_id: "dev001"
+  - name: "服务器维护中"
+    params:
+      username: "admin"
+      password: "admin"
+      server_id: 9999
+      device_id: "dev002"

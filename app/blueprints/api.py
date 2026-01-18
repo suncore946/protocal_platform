@@ -35,6 +35,7 @@ def get_doc():
             # 扩展配置信息回显
             "call_type": row["call_type"],
             "target_config": json.loads(row["target_config_json"] or "{}"),
+            "test_cases": json.loads(row["test_cases_json"] or "[]"),
         })
     return jsonify(results)
 

@@ -1,12 +1,13 @@
 import socket
 import struct
 import importlib
+import dataclasses
 from typing import Any, Dict
 from google.protobuf import json_format
 from .base import BaseProtocolHandler
 
 class ProtobufProtocolHandler(BaseProtocolHandler):
-    """Protobuf over TCP 协议处理器"""
+    """Protobuf over TCP 协议处理器 (支持 google.protobuf 和 pure-protobuf)"""
     
     def execute(self, config: Dict[str, Any], params: Dict[str, Any]) -> Dict[str, Any]:
         host = config.get("host")
@@ -23,10 +24,21 @@ class ProtobufProtocolHandler(BaseProtocolHandler):
         ReqClass = getattr(module, req_class_name)
         ResClass = getattr(module, res_class_name)
 
-        # 构造请求对象
-        req_obj = ReqClass()
-        json_format.ParseDict(params, req_obj, ignore_unknown_fields=True)
-        req_bytes = req_obj.SerializeToString()
+        # 判断是否为 pure-protobuf (使用 dataclass)
+        is_pure = dataclasses.is_dataclass(ReqClass)
+
+        if is_pure:
+            # === Pure Python Mode ===
+            # 过滤掉不在 dataclass 字段中的参数，防止 __init__ 报错
+            valid_keys = {f.name for f in dataclasses.fields(ReqClass)}
+            filtered_params = {k: v for k, v in params.items() if k in valid_keys}
+            req_obj = ReqClass(**filtered_params)
+            req_bytes = req_obj.dumps()
+        else:
+            # === Standard Google Protobuf Mode ===
+            req_obj = ReqClass()
+            json_format.ParseDict(params, req_obj, ignore_unknown_fields=True)
+            req_bytes = req_obj.SerializeToString()
 
         # 发送 (Length-Prefixed: 4 bytes big-endian length + body)
         with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
@@ -56,7 +68,12 @@ class ProtobufProtocolHandler(BaseProtocolHandler):
                 raise IOError(f"Incomplete response. Expected {resp_len}, got {len(resp_bytes)}")
 
             # 解析响应
-            res_obj = ResClass()
-            res_obj.ParseFromString(resp_bytes)
-            
-            return json_format.MessageToDict(res_obj, preserving_proto_field_name=True)
+            if is_pure:
+                # === Pure Python Mode ===
+                res_obj = ResClass.loads(resp_bytes)
+                return dataclasses.asdict(res_obj)
+            else:
+                # === Standard Google Protobuf Mode ===
+                res_obj = ResClass()
+                res_obj.ParseFromString(resp_bytes)
+                return json_format.MessageToDict(res_obj, preserving_proto_field_name=True)

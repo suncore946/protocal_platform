@@ -1,0 +1,21 @@
+name: "HTTP测试"
+call_type: "http"
+target_config:
+  url: "https://httpbin.org/get"
+  method: "GET"
+description: "调用外部HTTP接口测试"
+params:
+  test_param:
+    type: "string"
+    default: "hello"
+sample_return:
+  url: "https://httpbin.org/get"
+  args:
+    test_param: "hello"
+test_cases:
+  - name: "默认测试"
+    params:
+      test_param: "hello"
+  - name: "测试 World"
+    params:
+      test_param: "world"

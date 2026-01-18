@@ -65,7 +65,8 @@ class Database:
                     sample_return_json TEXT,
                     assertions_json TEXT DEFAULT '[]',
                     call_type TEXT DEFAULT 'socket',
-                    target_config_json TEXT
+                    target_config_json TEXT,
+                    test_cases_json TEXT DEFAULT '[]'
                 );
                 """
             )
@@ -74,7 +75,8 @@ class Database:
             for col, type_info in [
                 ("assertions_json", "TEXT DEFAULT '[]'"),
                 ("call_type", "TEXT DEFAULT 'socket'"),
-                ("target_config_json", "TEXT")
+                ("target_config_json", "TEXT"),
+                ("test_cases_json", "TEXT DEFAULT '[]'")
             ]:
                 try:
                     cur.execute(f"ALTER TABLE protocol ADD COLUMN {col} {type_info}")
@@ -134,8 +136,8 @@ class Database:
                 if not cur.fetchone():
                     cur.execute(
                         """
-                        INSERT INTO protocol (name, description, params_json, sample_return_json, call_type, target_config_json, assertions_json)
-                        VALUES (?, ?, ?, ?, ?, ?, ?)
+                        INSERT INTO protocol (name, description, params_json, sample_return_json, call_type, target_config_json, assertions_json, test_cases_json)
+                        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
                         """,
                         (
                             name,
@@ -145,6 +147,7 @@ class Database:
                             item.get("call_type", "socket"),
                             json.dumps(item.get("target_config", {}), ensure_ascii=False),
                             json.dumps(item.get("assertions", []), ensure_ascii=False),
+                            json.dumps(item.get("test_cases", []), ensure_ascii=False),
                         ),
                     )
                     current_app.logger.info(f"Inserted new default protocol: {name}")
