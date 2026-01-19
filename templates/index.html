@@ -79,23 +79,9 @@
 
              <!-- Dynamic Form -->
              <form id="paramForm"></form>
-          </div>
-
-          <div class="card">
-            <h3 style="margin:0 0 16px 0; font-size:16px;">高级选项</h3>
-            <div class="form-group">
-               <label class="label">调用并发数</label>
-               <input type="number" id="concurrency" class="input" value="1" min="1" max="50" />
-            </div>
-            <div class="form-group">
-              <label style="display:flex; align-items:center; gap:8px; cursor:pointer;">
-                <input type="checkbox" id="withRandom" /> 
-                <span>启用随机参数 (Random Seed)</span>
-              </label>
-            </div>
-            <button id="callBtn" class="btn" style="width:100%;">
-              <i class="fa-solid fa-play" style="margin-right:8px;"></i> 发起调用
-            </button>
+             <button id="callBtn" class="btn" style="width:100%; margin-top:16px;">
+               <i class="fa-solid fa-play" style="margin-right:8px;"></i> 发起调用
+             </button>
           </div>
         </div>
 
@@ -386,12 +372,6 @@
            }
        }
        
-       const concurrency = document.getElementById('concurrency').value;
-       const withRandom = document.getElementById('withRandom').checked;
-       
-       payload.concurrency = concurrency;
-       payload.with_random = withRandom;
-
        fetch('/api/protocol/' + currentProtocolData.id + '/call', {
           method: 'POST',
           headers: {'Content-Type': 'application/json'},
